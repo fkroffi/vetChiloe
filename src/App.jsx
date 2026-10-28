@@ -2,18 +2,31 @@ import { useEffect, useState } from 'react';
 import TarjetaPaciente from './components/TarjetaPaciente';
 import FichaClinica from './components/FichaClinica';
 import FormularioPaciente from './components/FormularioPaciente';
-import { actualizarPaciente as guardarPaciente, obtenerPacientes, registrarPaciente } from './services/pacienteService';
+import BuscadorPaciente from './components/BuscadorPaciente';
+import {
+  actualizarPaciente as guardarPaciente,
+  obtenerPacientes,
+  obtenerResumenPorEspecie,
+  registrarPaciente,
+} from './services/pacienteService';
 import './App.css';
 
 function App() {
   const [pacientes, setPacientes] = useState([]);
   const [pacienteSeleccionado, setPacienteSeleccionado] = useState(null);
   const [vistaActual, setVistaActual] = useState('fichas');
+  const [busqueda, setBusqueda] = useState('');
+  const [resumenEspecies, setResumenEspecies] = useState([]);
 
   useEffect(() => {
     let activo = true;
     obtenerPacientes().then((resultado) => {
       if (activo) setPacientes(resultado);
+    });
+    obtenerResumenPorEspecie().then((resultado) => {
+      if (activo) setResumenEspecies(resultado);
+    }).catch(() => {
+      if (activo) setResumenEspecies([]);
     });
 
     return () => {
@@ -21,11 +34,17 @@ function App() {
     };
   }, []);
 
+  const textoBusqueda = busqueda.trim().toLocaleLowerCase();
+  const pacientesFiltrados = pacientes.filter((paciente) => (
+    `${paciente.nombre} ${paciente.especie}`.toLocaleLowerCase().includes(textoBusqueda)
+  ));
+
   const agregarPaciente = async (datos) => {
     const nuevoPaciente = await registrarPaciente(datos);
     if (!nuevoPaciente) return;
 
     setPacientes((pacientesActuales) => [...pacientesActuales, nuevoPaciente]);
+    obtenerResumenPorEspecie().then(setResumenEspecies).catch(() => setResumenEspecies([]));
     setVistaActual('fichas');
   };
 
@@ -38,6 +57,7 @@ function App() {
     setPacientes((pacientesActuales) => pacientesActuales.map((paciente) => (
       paciente.id === pacienteActualizado.id ? pacienteActualizado : paciente
     )));
+    obtenerResumenPorEspecie().then(setResumenEspecies).catch(() => setResumenEspecies([]));
     setPacienteSeleccionado(pacienteActualizado);
   };
 
@@ -107,15 +127,34 @@ function App() {
                 Registrar paciente
               </button>
             </div>
-            <div className="cuadricula-tarjetas">
-              {pacientes.map((pacienteIterado) => (
+            <div className="herramientas-directorio">
+              <BuscadorPaciente texto={busqueda} onCambiar={setBusqueda} />
+              <p className="contador-resultados" aria-live="polite">
+                {pacientesFiltrados.length} de {pacientes.length} pacientes
+              </p>
+            </div>
+            {resumenEspecies.length > 0 && (
+              <div className="resumen-especies" aria-label="Resumen de pacientes por especie">
+                {resumenEspecies.map(({ especie, total }) => (
+                  <span className={`resumen-especie ${especie.toLowerCase()}`} key={especie}>
+                    {especie}: {total}
+                  </span>
+                ))}
+              </div>
+            )}
+            {pacientesFiltrados.length === 0 ? (
+              <p className="directorio-vacio" role="status">No se encontraron pacientes</p>
+            ) : (
+              <div className="cuadricula-tarjetas">
+              {pacientesFiltrados.map((pacienteIterado) => (
                 <TarjetaPaciente
                   key={pacienteIterado.id}
                   paciente={pacienteIterado}
                   onVerFicha={setPacienteSeleccionado}
                 />
               ))}
-            </div>
+              </div>
+            )}
           </section>
         )}
       </main>

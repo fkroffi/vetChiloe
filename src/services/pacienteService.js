@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000/api/pacientes';
+const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/pacientes`;
 
 function especieParaApi(especie) {
   if (especie === 'Perro') return 'Canino';
@@ -34,6 +34,19 @@ function prepararDatos(datos) {
 
 export async function obtenerPacientes() {
   const pacientes = await solicitar(API_URL);
+  return pacientes.map(pacienteParaInterfaz);
+}
+
+export async function obtenerResumenPorEspecie() {
+  const resumen = await solicitar(`${API_URL}/resumen`);
+  return resumen.map((fila) => ({
+    especie: fila.especie,
+    total: Number(fila.total),
+  }));
+}
+
+export async function buscarPacientes(texto) {
+  const pacientes = await solicitar(`${API_URL}/buscar?q=${encodeURIComponent(texto)}`);
   return pacientes.map(pacienteParaInterfaz);
 }
 

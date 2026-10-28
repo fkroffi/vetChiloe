@@ -1,6 +1,6 @@
 # Sistema de Información: Veterinaria Chiloé
 
-Aplicación web para gestionar pacientes y fichas clínicas veterinarias. El frontend está construido con React y Vite; el backend expone una API REST con Express y mantiene los datos en memoria.
+Aplicación web para gestionar pacientes y fichas clínicas veterinarias. El frontend está construido con React y Vite; el backend expone una API REST con Express y persiste los datos en PostgreSQL.
 
 Proyecto de la asignatura Tecnologías Web y Móviles de Ingeniería Civil en Informática, Universidad de Los Lagos.
 
@@ -8,7 +8,8 @@ Proyecto de la asignatura Tecnologías Web y Móviles de Ingeniería Civil en In
 
 - Frontend: React, Vite y CSS.
 - Backend: Node.js, Express y CORS.
-- Persistencia actual: memoria del servidor. El repositorio es el punto de sustitución futura por PostgreSQL.
+- Persistencia: PostgreSQL en Neon.
+- Despliegue: frontend en Vercel y API en Render.
 
 ## Arquitectura
 
@@ -18,11 +19,10 @@ flowchart LR
    Routes --> Controllers[Controladores]
    Controllers --> Services[Servicios]
    Services --> Repositories[Repositorios]
-   Repositories -->|actual| Memory[(Memoria)]
-   Repositories -.->|futuro| PostgreSQL[(PostgreSQL)]
+   Repositories --> PostgreSQL[(Neon PostgreSQL)]
 ```
 
-Las rutas reciben `GET`, `POST` y `PUT` en `/api/pacientes`. Los controladores gestionan la petición y la respuesta HTTP; los servicios validan especie y generan el número de atención; los repositorios leen y modifican los datos en memoria. El servicio frontend adapta `Perro`/`Gato` a `Canino`/`Felino` para la API.
+Las rutas reciben `GET`, `POST` y `PUT` en `/api/pacientes`. Los controladores gestionan la petición y la respuesta HTTP; los servicios validan los datos; los repositorios delegan en PostgreSQL, incluidas las funciones almacenadas. El servicio frontend adapta `Perro`/`Gato` a `Canino`/`Felino` para la API.
 
 ## Requisitos
 
@@ -46,7 +46,7 @@ npm install
 npm run dev
 ```
 
-Inicia el frontend desde la raíz del repositorio en otra terminal:
+Configura `server/.env` con `DATABASE_URL` de Neon antes de iniciar la API. Puedes usar `server/.env.example` como referencia. En otra terminal, desde la raíz, configura `.env` usando `.env.example` y luego inicia el frontend:
 
 ```bash
 npm run dev
@@ -54,11 +54,34 @@ npm run dev
 
 Abre la URL que muestra Vite, normalmente `http://localhost:5173/`. La API queda disponible en `http://localhost:3000/api/pacientes`.
 
+La primera inicialización de la API crea la tabla `pacientes`. Después, ejecuta una vez el contenido de `sql/funciones.sql` en el SQL Editor de Neon antes de registrar pacientes o solicitar búsqueda y resumen. El script se puede volver a ejecutar.
+
+## Despliegue
+
+1. Crea una base de datos en Neon y copia su connection string como secreto `DATABASE_URL`. La API crea la tabla `pacientes` al arrancar.
+2. Importa el repositorio en Render usando el `render.yaml` de la raíz. Configura `DATABASE_URL` con la cadena de Neon y `CORS_ORIGIN` con el dominio publicado en Vercel, por ejemplo `https://tu-app.vercel.app`.
+3. Importa el mismo repositorio en Vercel. Configura `VITE_API_URL` con la URL de Render seguida de `/api`, por ejemplo `https://tu-api.onrender.com/api`, y despliega.
+4. Comprueba `https://tu-api.onrender.com/health`; debe responder `{"status":"ok"}`.
+
+No subas `.env` ni pegues la cadena de Neon en el repositorio. Usa las variables de entorno de Render y Vercel para los valores de producción.
+
 ## API
 
 - `GET /api/pacientes`: obtiene el directorio de pacientes.
-- `POST /api/pacientes`: registra un paciente. La especie aceptada por el backend es `Canino` o `Felino`; el servicio genera el número de atención.
+- `GET /api/pacientes/buscar?q=mer`: busca por nombre o especie sin distinguir mayúsculas.
+- `GET /api/pacientes/resumen`: devuelve el total agrupado por especie.
+- `POST /api/pacientes`: registra un paciente. PostgreSQL normaliza la especie y genera el número de atención.
 - `PUT /api/pacientes/:id`: actualiza un paciente existente.
+- `PUT /api/pacientes/:id/diagnostico` con `{"diagnostico":"Alta médica."}`: registra el diagnóstico anterior y actualiza el actual.
+
+Pruebas rápidas con la API iniciada:
+
+```bash
+curl 'http://localhost:3000/api/pacientes/buscar?q=mer'
+curl 'http://localhost:3000/api/pacientes/resumen'
+```
+
+La búsqueda de la interfaz filtra el directorio cargado al instante. El endpoint de búsqueda ejecuta `buscar_pacientes()` directamente en PostgreSQL para consultas sobre la base completa.
 
 ## Demostración
 
@@ -67,4 +90,4 @@ Abre la URL que muestra Vite, normalmente `http://localhost:5173/`. La API queda
 3. Selecciona **Registrar paciente**, completa el formulario con especie Perro o Gato y envíalo.
 4. La aplicación envía el alta a la API; el nuevo paciente aparece en el directorio con su número de atención.
 
-Los cambios se conservan mientras el proceso del backend siga ejecutándose. Al reiniciarlo, el repositorio en memoria vuelve a los datos iniciales.
+Los datos se conservan en Neon entre reinicios del backend.

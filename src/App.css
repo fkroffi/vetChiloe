@@ -325,11 +325,78 @@
 }
 
 .tarjeta-especie {
+  display: inline-flex;
+  width: fit-content;
+  padding: 3px 7px;
+  border-radius: 3px;
   margin-bottom: 2px;
   color: var(--clinic-green);
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
+}
+
+.tarjeta-especie.perro,
+.resumen-especie.canino {
+  background: #e8f1ee;
+  color: #19584f;
+}
+
+.tarjeta-especie.gato,
+.resumen-especie.felino {
+  background: #f8ece6;
+  color: #9c4e35;
+}
+
+.tarjeta-especie.otro {
+  background: #eef0e2;
+  color: #666b32;
+}
+
+.resumen-especie.otro {
+  background: #eef0e2;
+  color: #666b32;
+}
+
+.herramientas-directorio {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-bottom: 14px;
+}
+
+.contador-resultados {
+  margin: 0;
+  color: var(--clinic-muted);
+  font-size: 13px;
+}
+
+.resumen-especies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.resumen-especie {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 9px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.directorio-vacio {
+  margin: 0;
+  padding: 34px 16px;
+  border: 1px dashed var(--clinic-border);
+  border-radius: 6px;
+  color: var(--clinic-muted);
+  text-align: center;
 }
 
 .tarjeta-responsable,

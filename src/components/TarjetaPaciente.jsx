@@ -7,7 +7,7 @@ function TarjetaPaciente({ paciente, onVerFicha }) {
       <div className="tarjeta-identidad">
         <span className="tarjeta-mascota" aria-hidden="true">{paciente.emoji}</span>
         <div>
-          <p className="tarjeta-especie">{paciente.especie}</p>
+          <p className={`tarjeta-especie ${paciente.especie.toLowerCase()}`}>{paciente.especie}</p>
           <h3>{paciente.nombre}</h3>
         </div>
       </div>
